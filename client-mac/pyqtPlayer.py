@@ -38,7 +38,8 @@ class ThreadRecv (threading.Thread):
         threading.Thread.__init__(self)
         self.client = client
         self.show_frame = parent.show_frame
-        self.bgimg = cv2.imread('background.jpg')        
+        self.bgimg = cv2.imread('background.jpg') 
+        self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
 
     def setsize(self, width, height):
         self.width = width
@@ -63,30 +64,23 @@ class ThreadRecv (threading.Thread):
             nparr = np.fromstring(msg.image, np.uint8)
             self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
             self.image = cv2.resize(self.image, (self.width, self.height))
-            print '[client - recv- 2]', (time.time()-start)*1000, 'ms'
             nparr = np.fromstring(msg.blur, np.uint8)
             self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
-            print '[client - recv- 3]', (time.time()-start)*1000, 'ms'
-            self.seg_fine = self.sigmoid(self.seg_fine)
-            print '[client - recv- 4]', (time.time()-start)*1000, 'ms'
+            #self.seg_fine = self.sigmoid(self.seg_fine)
             self.seg_fine = self.seg_fine[..., np.newaxis]
             self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
-            print '[client - recv- 5]', (time.time()-start)*1000, 'ms'
             self.seg_fine = cv2.resize(self.seg_fine, (self.width, self.height))
-            print '[client - recv- 6]', (time.time()-start)*1000, 'ms'
             self.seg_fine = np.float32(self.seg_fine)
-            print '[client - recv- 7]', (time.time()-start)*1000, 'ms'
-            #cv2.imwrite('./res/%d.jpg'%recv_count,self.seg_fine)
+            
             if BgType=='blur':
                 blurimg = cv2.blur(self.image, (slider.value(),slider.value()))
-                print '[client - recv- 8]', (time.time()-start)*1000, 'ms'
                 blur = np.uint8(self.image*(self.seg_fine)+blurimg*(1-self.seg_fine))
-                print '[client - recv- 9]', (time.time()-start)*1000, 'ms'
             else:
                 blur = np.uint8(self.image*(self.seg_fine)+self.bgimg*(1-self.seg_fine))
-            print '[client - recv- 10]', (time.time()-start)*1000, 'ms'
             self.nextFrameSlot(blur)
-            print '[client - recv- 11]', (time.time()-start)*1000, 'ms'
+            ## write
+            #output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.cv.CV_BGR2RGB)  
+            #cv2.imwrite('./res/%d.jpg'%recv_count,output)
             print "client - recv", recv_count-1, 'done', (time.time()-start)*1000, 'ms'
 
         totaltime = (time.time()-thread_start)*1000

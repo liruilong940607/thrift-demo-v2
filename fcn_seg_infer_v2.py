@@ -41,9 +41,9 @@ def resize_padding2(image, dstshape): # dstshape = [128, 224]
 net_new = caffe.Net('/home/dalong/Workspace0/experiment/4_mobilenet_trytofix/infer_hair_mobile_nn_v2.prototxt', \
                 '/home/dalong/Workspace0/experiment/4_mobilenet_trytofix/snapshot/init03_224_lr04_iter_27000.caffemodel', \
                 caffe.TEST)
-
 def predict_new(image): # 224 224
     img, bbx= resize_padding2(image, [224, 224])
+    img = img[:,:,::-1]
     img = np.float32(img)
     img -= np.array((128.0, 128.0, 128.0), dtype=np.float32)
     img = img.transpose((2,0,1))
@@ -54,7 +54,6 @@ def predict_new(image): # 224 224
     
     out = net_new.blobs['prob'].data[0]
     out = out[1] 
-    
     out = out[bbx[1]:bbx[3], bbx[0]:bbx[2]]
     out = cv2.resize(out, (image.shape[1], image.shape[0]))
     return out
