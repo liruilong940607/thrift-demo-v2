@@ -127,9 +127,9 @@ class VideoCapture(QWidget):
         img = img.scaled(self.video_frame.width(), self.video_frame.height(), Qt.KeepAspectRatio)
         pix = QPixmap.fromImage(img)
         self.video_frame.setPixmap(pix)
-        imgsend = cv2.resize(frame,(368, 640)) # DO NOT change this size
-        reqmsg = ttypes.MSG()
-        reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
+        #imgsend = cv2.resize(frame,(368, 640)) # DO NOT change this size
+        #reqmsg = ttypes.MSG()
+        #reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
 
         self.framecost = (time.time()-timeinit)*1000
         print 'time cost each frame in init: ', (time.time()-timeinit)*1000, 'ms'
@@ -165,7 +165,7 @@ class VideoCapture(QWidget):
         print '[6]', (time.time()-timestart)*1000, 'ms'
         if NotSending==False:
             #print 'client - send', send_count
-            imgsend = cv2.resize(frame,(368, 640)) # DO NOT change this size
+            imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
             print '[7]', (time.time()-timestart)*1000, 'ms'
             reqmsg = ttypes.MSG()
             reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
@@ -297,7 +297,7 @@ class ControlWindow(QMainWindow):
             print "client - try to connect"
             print "server - " + self.client.try_to_connect()
             print "client - try to init"
-            print "server - " + self.client.init_image_size(368, 640)
+            print "server - " + self.client.init_image_size(224, 224)
         except Thrift.TException, ex:
             print "%s" % (ex.message)
 

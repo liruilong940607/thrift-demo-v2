@@ -14,7 +14,7 @@ from thrift.server import TServer
 
 import time
 import numpy as np
-import fcn_seg_infer
+import fcn_seg_infer_v2 as fcn_seg_infer
 from datetime import datetime
 
 class HumanSegHandler:
@@ -27,19 +27,11 @@ class HumanSegHandler:
         return "disconnect successful!"
     
     def init_image_size(self, width, height):
-        net_width = 192
-        net_height = 320        
-        fcn_seg_infer.net.blobs['data'].reshape(1, 3, net_height, net_width)
-        fcn_seg_infer.net.blobs['data'].data[...] = np.zeros((3, net_height, net_width), np.float32)
-        fcn_seg_infer.net.forward()
-        
-        fcn_seg_infer.net2_width = 376
-        fcn_seg_infer.net2_height = 600
-        fcn_seg_infer.net2.blobs['data'].reshape(1, 3, fcn_seg_infer.net2_height, fcn_seg_infer.net2_width)
-        fcn_seg_infer.net2.blobs['data'].data[...] = np.zeros((3, fcn_seg_infer.net2_height, fcn_seg_infer.net2_width), np.float32)
-        fcn_seg_infer.net2.blobs['comask'].reshape(1, 1, fcn_seg_infer.net2_height, fcn_seg_infer.net2_width)
-        fcn_seg_infer.net2.blobs['comask'].data[...] = np.zeros((1, fcn_seg_infer.net2_height, fcn_seg_infer.net2_width), np.float32)
-        fcn_seg_infer.net2.forward()
+        net_width = 224
+        net_height = 224        
+        fcn_seg_infer.net_new.blobs['data'].reshape(1, 3, net_height, net_width)
+        fcn_seg_infer.net_new.blobs['data'].data[...] = np.zeros((3, net_height, net_width), np.float32)
+        fcn_seg_infer.net_new.forward()
         
         return 'init image size done!'
     
@@ -49,7 +41,7 @@ class HumanSegHandler:
         nparr = np.fromstring(msg.image, np.uint8)
         frame = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
         seg_fine = fcn_seg_infer.pred_overall(frame)*255.0
-	#blur = fcn_seg_infer.blur2(frame, seg_fine)
+        #blur = fcn_seg_infer.blur2(frame, seg_fine)
         #cv2.imwrite('test_server.jpg',blur)
         rspmsg = MSG()
         rspmsg.image = msg.image
