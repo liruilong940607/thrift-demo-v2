@@ -19,9 +19,7 @@ from datetime import datetime
 
 class HumanSegHandler:
     def try_to_connect(self):
-        #global server
-	#server.stopped = True
-	return "connect successful!"
+		return "connect successful!"
     
     def try_to_disconnect(self):
         return "disconnect successful!"
