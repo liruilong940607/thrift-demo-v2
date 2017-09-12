@@ -14,6 +14,7 @@ from thrift.server import TServer
 import numpy as np
 import time
 import threading
+import queue
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -23,6 +24,7 @@ import cv2
 host = '166.111.71.14'
 port = 9095
 
+sendque = queue.Queue()
 mutex = threading.Lock()
 recv_count = 0
 send_count = 0
@@ -65,12 +67,13 @@ class ThreadRecv (threading.Thread):
             msg = self.client.recv_bg_blur()
             start = time.time()
             recv_count += 1
-            nparr = np.fromstring(msg.image, np.uint8)
-            if cv2.__version__[0]=='3':
-                self.image = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #opencv3  
-            else:
-                self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
-            self.image = cv2.resize(self.image, (self.width, self.height))
+            # nparr = np.fromstring(msg.image, np.uint8)
+            # if cv2.__version__[0]=='3':
+            #     self.image = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #opencv3  
+            # else:
+            #     self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
+            # self.image = cv2.resize(self.image, (self.width, self.height))
+            self.image = sendque.get()
             nparr = np.fromstring(msg.blur, np.uint8)
             if cv2.__version__[0]=='3':
                 self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
@@ -172,6 +175,7 @@ class VideoCapture(QWidget):
         self.video_frame.setPixmap(pix)
         if NotSending==False:
             #print 'client - send', send_count
+            sendque.put(frame)
             imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
             reqmsg = ttypes.MSG()
             reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
