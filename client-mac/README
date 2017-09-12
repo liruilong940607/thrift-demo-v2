@@ -1,0 +1,26 @@
+# 配置
+
+## python3.6 + opencv3 
+
+```
+pip install thrift
+pip install opencv-python
+pip install pyqt5
+```
+
+修改 /Users/dalong/env-p3.6/lib/python3.6/site-packages/thrift/compat.py 对应的python3的函数如下。
+
+```
+    def binary_to_str(bin_val):
+        try: #add
+            return bin_val.decode('utf8')
+        except: #add
+            return bin_val #add
+
+    def str_to_binary(str_val):
+        if type(str_val)==type(b'str'): #add
+            return str_val #add
+        return bytes(str_val, 'utf8')
+
+```
+

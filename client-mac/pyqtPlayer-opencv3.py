@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*- 
+
 import sys
 sys.path.append('./gen-py')
 sys.path.append('./gen-py/HumanSeg')
@@ -40,7 +42,7 @@ class ThreadRecv (threading.Thread):
         self.client = client
         self.show_frame = parent.show_frame
         self.bgimg = cv2.imread('background.jpg') 
-        self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
+        self.bgimg = cv2.cvtColor(self.bgimg, cv2.COLOR_BGR2RGB) #opencv3   
 
     def setsize(self, width, height):
         self.width = width
@@ -63,10 +65,10 @@ class ThreadRecv (threading.Thread):
             start = time.time()
             recv_count += 1
             nparr = np.fromstring(msg.image, np.uint8)
-            self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
+            self.image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             self.image = cv2.resize(self.image, (self.width, self.height))
             nparr = np.fromstring(msg.blur, np.uint8)
-            self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
+            self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0
             #self.seg_fine = self.sigmoid(self.seg_fine)
             self.seg_fine = self.seg_fine[..., np.newaxis]
             self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
@@ -80,7 +82,7 @@ class ThreadRecv (threading.Thread):
                 blur = np.uint8(self.image*(self.seg_fine)+self.bgimg*(1-self.seg_fine))
             self.nextFrameSlot(blur)
             ## write
-            #output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.cv.CV_BGR2RGB)  
+            #output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.COLOR_BGR2RGB)  
             #cv2.imwrite('./res/%d.jpg'%recv_count,output)
             print ("client - recv", recv_count-1, 'done', (time.time()-start)*1000, 'ms')
 
@@ -115,7 +117,7 @@ class VideoCapture(QWidget):
             self.cap = cv2.VideoCapture(filename[0])  
         timeinit = time.time()      
         success, frame = self.cap.read()
-        frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.width = frame.shape[1]
         self.height = frame.shape[0]
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -145,7 +147,7 @@ class VideoCapture(QWidget):
         if not success:
             self.release()
             return
-        frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.width = frame.shape[1]
         self.height = frame.shape[0]
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -157,6 +159,8 @@ class VideoCapture(QWidget):
             imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
             reqmsg = ttypes.MSG()
             reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
+            #print (reqmsg.image[0:20])
+            #frame.tostring().decode('utf8')
             self.client.send_bg_blur(reqmsg)
             mutex.acquire()
             send_count += 1
