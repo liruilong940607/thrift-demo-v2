@@ -40,7 +40,10 @@ class ThreadRecv (threading.Thread):
         self.client = client
         self.show_frame = parent.show_frame
         self.bgimg = cv2.imread('background.jpg') 
-        self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
+        if cv2.__version__[0]=='3':
+            self.bgimg = cv2.cvtColor(self.bgimg, cv2.COLOR_BGR2RGB) #opencv3  
+        else:
+            self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
 
     def setsize(self, width, height):
         self.width = width
@@ -63,10 +66,16 @@ class ThreadRecv (threading.Thread):
             start = time.time()
             recv_count += 1
             nparr = np.fromstring(msg.image, np.uint8)
-            self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
+            if cv2.__version__[0]=='3':
+                self.image = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #opencv3  
+            else:
+                self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
             self.image = cv2.resize(self.image, (self.width, self.height))
             nparr = np.fromstring(msg.blur, np.uint8)
-            self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
+            if cv2.__version__[0]=='3':
+                self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
+            else:
+                self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
             #self.seg_fine = self.sigmoid(self.seg_fine)
             self.seg_fine = self.seg_fine[..., np.newaxis]
             self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
@@ -80,7 +89,10 @@ class ThreadRecv (threading.Thread):
                 blur = np.uint8(self.image*(self.seg_fine)+self.bgimg*(1-self.seg_fine))
             self.nextFrameSlot(blur)
             ## write
-            #output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.cv.CV_BGR2RGB)  
+            #if cv2.__version__[0]=='3':
+            #   output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.COLOR_BGR2RGB)  #opencv3  
+            #else:
+            #   output = cv2.cvtColor(np.hstack((self.image,blur)), cv2.cv.CV_BGR2RGB)  
             #cv2.imwrite('./res/%d.jpg'%recv_count,output)
             print ("client - recv", recv_count-1, 'done', (time.time()-start)*1000, 'ms')
 
@@ -115,7 +127,10 @@ class VideoCapture(QWidget):
             self.cap = cv2.VideoCapture(filename[0])  
         timeinit = time.time()      
         success, frame = self.cap.read()
-        frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
+        if cv2.__version__[0]=='3':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)#opencv3  
+        else:
+            frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
         self.width = frame.shape[1]
         self.height = frame.shape[0]
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -145,7 +160,10 @@ class VideoCapture(QWidget):
         if not success:
             self.release()
             return
-        frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
+        if cv2.__version__[0]=='3':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)#opencv3 
+        else:
+            frame = cv2.cvtColor(frame, cv2.cv.CV_BGR2RGB)
         self.width = frame.shape[1]
         self.height = frame.shape[0]
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
