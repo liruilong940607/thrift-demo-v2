@@ -22,8 +22,8 @@ void initCodec() {
 }
 
 int getNewCodec() {
-  encoder[codecNum] = new Encoder(Size(368, 640));
-  decoder[codecNum] = new Decoder(Size(368, 640));
+  encoder[codecNum] = new Encoder(Size(448, 252));
+  decoder[codecNum] = new Decoder(Size(448, 252));
   ++codecNum;
   return codecNum - 1;
 }

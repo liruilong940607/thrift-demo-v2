@@ -3,7 +3,6 @@ sys.path.append('./gen-py')
 sys.path.append('./gen-py/HumanSeg')
 
 from HumanSeg import HumanSeg
-from HumanSeg import DataTransfer
 
 from HumanSeg import ttypes
 from thrift import Thrift
@@ -14,7 +13,6 @@ from thrift.server import TServer
 import numpy as np
 import time
 import threading
-import queue
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -26,8 +24,18 @@ from codec import codec
 host = '166.111.71.14'
 port = 9095
 
-timeque = queue.Queue()
-sendque = queue.Queue()
+if sys.version_info[0] == 2:
+    import Queue
+    timeque = Queue.Queue()
+    sendque = Queue.Queue()
+else:
+    import queue
+    timeque = queue.Queue()
+    sendque = queue,Queue()
+
+codecid = codec.get_new_codec()
+clientID = 0
+
 mutex = threading.Lock()
 recv_count = 0
 send_count = 0
@@ -43,8 +51,6 @@ bg_capture = [cv2.VideoCapture('background/1505272736.mp4'), \
     cv2.VideoCapture('background/1505273808.mp4'), \
     cv2.VideoCapture('background/2016_10_22_IMG_4576.mp4'), \
     cv2.VideoCapture('background/IMG_2165.mp4')]
-
-clientID = 1
 
 ################
 ## recv thread
@@ -94,10 +100,10 @@ class ThreadRecv (threading.Thread):
             #     self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
             # else:
             #     self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
+            self.seg_fine = codec.decode(msg, codecid) / 255.0 #codec
             #self.seg_fine = self.sigmoid(self.seg_fine)
-            self.seg_fine = codec.decode(msg)
-            self.seg_fine = self.seg_fine[..., np.newaxis]
-            self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
+            #self.seg_fine = self.seg_fine[..., np.newaxis]
+            #self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
             self.seg_fine = cv2.resize(self.seg_fine, (self.width, self.height))
             self.seg_fine = np.float32(self.seg_fine)
             
@@ -224,10 +230,11 @@ class VideoCapture(QWidget):
             #print 'client - send', send_count
             sendque.put(frame)
             #imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
-            imgsend = resize_nopadding(frame, [224,224])
+            imgsend = resize_nopadding(frame, [448,448])
             #reqmsg = ttypes.MSG()
             #reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
-            self.client.send_bg_blur(codec.encode(imgsend), clientID)
+            print imgsend.shape
+            self.client.send_bg_blur(codec.encode(imgsend, codecid), clientID) #codec
             send_count += 1
 
     def start(self):
@@ -336,7 +343,10 @@ class VideoDisplayWidget(QWidget):
         BgType = 'replace'
         mutex.acquire()
         BgIndex = index - 1
-        bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1)
+        if cv2.__version__[0]=='3':
+            bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1) #opencv3
+        else:
+            bg_capture[BgIndex].set(cv2.cv.CV_CAP_PROP_POS_FRAMES, 1)
         mutex.release()
         print (BgType)
 

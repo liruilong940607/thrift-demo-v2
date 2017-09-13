@@ -1,0 +1,22 @@
+#OPENCV_PATH = /Users/dalong/3rd-Party/opencv/opencv2-py2.7/
+OPENCV_PATH = /Users/dalong/3rd-Party/opencv/opencv3-py3.6/
+LIBAV_PATH = /Users/dalong/3rd-Party/libav/install_prefix/
+INCS = -I$(LIBAV_PATH)/include -I/Users/dalong/env-p3.6/lib/python3.6/site-packages/numpy/core/include/ -I$(OPENCV_PATH)/include -I/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6/include/python3.6m/ -I/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6/include/
+LIBS = -L$(LIBAV_PATH)/lib/ -L$(OPENCV_PATH)/lib/ -lopencv_calib3d  -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_highgui -lopencv_imgproc  -lopencv_ml  -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_superres  -lopencv_video -lopencv_videostab  -lavcodec -lavutil -L/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6/lib/ -lpython3.6
+SRCS = main.cpp codec.cpp conversion.cpp
+OBJS = $(SRCS:.cpp=.o)
+
+all: $(OBJS)
+	g++ -o codec.so -shared $(OBJS) $(LIBS) -L/Users/dalong/3rd-Party/boost/boost_1_62_0/install_prefix/lib -lboost_python3
+
+codec.o:
+	g++ -c codec.cpp $(INCS) -fPIC
+
+main.o:
+	g++ -c main.cpp $(INCS) -fPIC
+
+conversion.o:
+	g++ -c conversion.cpp $(INCS) -fPIC
+
+clean:
+	rm *.o *.so
