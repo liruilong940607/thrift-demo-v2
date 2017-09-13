@@ -21,6 +21,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 import cv2
 
+from codec import codec
+
 host = '166.111.71.14'
 port = 9095
 
@@ -41,6 +43,8 @@ bg_capture = [cv2.VideoCapture('background/1505272736.mp4'), \
     cv2.VideoCapture('background/1505273808.mp4'), \
     cv2.VideoCapture('background/2016_10_22_IMG_4576.mp4'), \
     cv2.VideoCapture('background/IMG_2165.mp4')]
+
+clientID = 1
 
 ################
 ## recv thread
@@ -85,12 +89,13 @@ class ThreadRecv (threading.Thread):
             #     self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
             # self.image = cv2.resize(self.image, (self.width, self.height))
             self.image = sendque.get()
-            nparr = np.fromstring(msg.blur, np.uint8)
-            if cv2.__version__[0]=='3':
-                self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
-            else:
-                self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
+            # nparr = np.fromstring(msg.blur, np.uint8)
+            # if cv2.__version__[0]=='3':
+            #     self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
+            # else:
+            #     self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
             #self.seg_fine = self.sigmoid(self.seg_fine)
+            self.seg_fine = codec.decode(msg)
             self.seg_fine = self.seg_fine[..., np.newaxis]
             self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
             self.seg_fine = cv2.resize(self.seg_fine, (self.width, self.height))
@@ -220,9 +225,9 @@ class VideoCapture(QWidget):
             sendque.put(frame)
             #imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
             imgsend = resize_nopadding(frame, [224,224])
-            reqmsg = ttypes.MSG()
-            reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
-            self.client.send_bg_blur(reqmsg)
+            #reqmsg = ttypes.MSG()
+            #reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
+            self.client.send_bg_blur(codec.encode(imgsend), clientID)
             send_count += 1
 
     def start(self):
@@ -384,7 +389,7 @@ class ControlWindow(QMainWindow):
             self.transport.open()
 
             print ("client - try to connect")
-            print ("server - " + self.client.try_to_connect())
+            print ("server - " + self.client.try_to_connect(clientID))
             print ("client - try to init")
             print ("server - " + self.client.init_image_size(224, 224))
         except (Thrift.TException, ex):

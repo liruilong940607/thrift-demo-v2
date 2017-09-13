@@ -17,11 +17,17 @@ import numpy as np
 import fcn_seg_infer_v2 as fcn_seg_infer
 from datetime import datetime
 
+from codec import codec
+
+codec_map = {}
+
 class HumanSegHandler:
-    def try_to_connect(self):
-		return "connect successful!"
+    def try_to_connect(self, clientid):
+        codec_map[clientid] = codec.get_new_codec()
+        return "connect successful!"
     
-    def try_to_disconnect(self):
+    def try_to_disconnect(self, clientid):
+        codec.release_codec(clientid) 
         return "disconnect successful!"
     
     def init_image_size(self, width, height):
@@ -33,21 +39,13 @@ class HumanSegHandler:
         
         return 'init image size done!'
     
-    def bg_blur(self, msg):
+    def bg_blur(self, image, clientid):
         print 'server--blur'
         timestamp = datetime.now()
-        nparr = np.fromstring(msg.image, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
+        frame = codec.decode(image, codec_map[clientid])
         seg_fine = fcn_seg_infer.pred_overall(frame)*255.0
-        #blur = fcn_seg_infer.blur2(frame, seg_fine)
-        #cv2.imwrite('test_server.jpg',blur)
-        rspmsg = MSG()
-        rspmsg.image = msg.image
-        #rspmsg.image = cv2.imencode('.jpg', seg_fine)[1].tostring()
-        rspmsg.blur = cv2.imencode('.jpg', seg_fine)[1].tostring()
         fcn_seg_infer.printTime('[Time] decode+encode+pred', timestamp)
-        return rspmsg
-
+        return codec.encode(seg_fine, codec_map[clientid])
     
 handler = HumanSegHandler()
 processor = HumanSeg.Processor(handler)

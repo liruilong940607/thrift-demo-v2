@@ -24,10 +24,10 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] function [arg1 [arg2...]]')
   print('')
   print('Functions:')
-  print('  string try_to_connect()')
+  print('  string try_to_connect(i32 clientid)')
   print('  string init_image_size(i32 width, i32 height)')
-  print('  MSG bg_blur(MSG msg)')
-  print('  string try_to_disconnect()')
+  print('  string bg_blur(string image, i32 clientid)')
+  print('  string try_to_disconnect(i32 clientid)')
   print('')
   sys.exit(0)
 
@@ -85,10 +85,10 @@ client = HumanSeg.Client(protocol)
 transport.open()
 
 if cmd == 'try_to_connect':
-  if len(args) != 0:
-    print('try_to_connect requires 0 args')
+  if len(args) != 1:
+    print('try_to_connect requires 1 args')
     sys.exit(1)
-  pp.pprint(client.try_to_connect())
+  pp.pprint(client.try_to_connect(eval(args[0]),))
 
 elif cmd == 'init_image_size':
   if len(args) != 2:
@@ -97,16 +97,16 @@ elif cmd == 'init_image_size':
   pp.pprint(client.init_image_size(eval(args[0]),eval(args[1]),))
 
 elif cmd == 'bg_blur':
-  if len(args) != 1:
-    print('bg_blur requires 1 args')
+  if len(args) != 2:
+    print('bg_blur requires 2 args')
     sys.exit(1)
-  pp.pprint(client.bg_blur(eval(args[0]),))
+  pp.pprint(client.bg_blur(args[0],eval(args[1]),))
 
 elif cmd == 'try_to_disconnect':
-  if len(args) != 0:
-    print('try_to_disconnect requires 0 args')
+  if len(args) != 1:
+    print('try_to_disconnect requires 1 args')
     sys.exit(1)
-  pp.pprint(client.try_to_disconnect())
+  pp.pprint(client.try_to_disconnect(eval(args[0]),))
 
 else:
   print('Unrecognized method %s' % cmd)

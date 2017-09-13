@@ -19,7 +19,11 @@ except:
 
 
 class Iface:
-  def try_to_connect(self):
+  def try_to_connect(self, clientid):
+    """
+    Parameters:
+     - clientid
+    """
     pass
 
   def init_image_size(self, width, height):
@@ -30,14 +34,19 @@ class Iface:
     """
     pass
 
-  def bg_blur(self, msg):
+  def bg_blur(self, image, clientid):
     """
     Parameters:
-     - msg
+     - image
+     - clientid
     """
     pass
 
-  def try_to_disconnect(self):
+  def try_to_disconnect(self, clientid):
+    """
+    Parameters:
+     - clientid
+    """
     pass
 
 
@@ -48,13 +57,18 @@ class Client(Iface):
       self._oprot = oprot
     self._seqid = 0
 
-  def try_to_connect(self):
-    self.send_try_to_connect()
+  def try_to_connect(self, clientid):
+    """
+    Parameters:
+     - clientid
+    """
+    self.send_try_to_connect(clientid)
     return self.recv_try_to_connect()
 
-  def send_try_to_connect(self):
+  def send_try_to_connect(self, clientid):
     self._oprot.writeMessageBegin('try_to_connect', TMessageType.CALL, self._seqid)
     args = try_to_connect_args()
+    args.clientid = clientid
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
@@ -107,18 +121,20 @@ class Client(Iface):
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "init_image_size failed: unknown result")
 
-  def bg_blur(self, msg):
+  def bg_blur(self, image, clientid):
     """
     Parameters:
-     - msg
+     - image
+     - clientid
     """
-    self.send_bg_blur(msg)
+    self.send_bg_blur(image, clientid)
     return self.recv_bg_blur()
 
-  def send_bg_blur(self, msg):
+  def send_bg_blur(self, image, clientid):
     self._oprot.writeMessageBegin('bg_blur', TMessageType.CALL, self._seqid)
     args = bg_blur_args()
-    args.msg = msg
+    args.image = image
+    args.clientid = clientid
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
@@ -138,13 +154,18 @@ class Client(Iface):
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "bg_blur failed: unknown result")
 
-  def try_to_disconnect(self):
-    self.send_try_to_disconnect()
+  def try_to_disconnect(self, clientid):
+    """
+    Parameters:
+     - clientid
+    """
+    self.send_try_to_disconnect(clientid)
     return self.recv_try_to_disconnect()
 
-  def send_try_to_disconnect(self):
+  def send_try_to_disconnect(self, clientid):
     self._oprot.writeMessageBegin('try_to_disconnect', TMessageType.CALL, self._seqid)
     args = try_to_disconnect_args()
+    args.clientid = clientid
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
@@ -195,7 +216,7 @@ class Processor(Iface, TProcessor):
     iprot.readMessageEnd()
     result = try_to_connect_result()
     try:
-      result.success = self._handler.try_to_connect()
+      result.success = self._handler.try_to_connect(args.clientid)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -233,7 +254,7 @@ class Processor(Iface, TProcessor):
     iprot.readMessageEnd()
     result = bg_blur_result()
     try:
-      result.success = self._handler.bg_blur(args.msg)
+      result.success = self._handler.bg_blur(args.image, args.clientid)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -252,7 +273,7 @@ class Processor(Iface, TProcessor):
     iprot.readMessageEnd()
     result = try_to_disconnect_result()
     try:
-      result.success = self._handler.try_to_disconnect()
+      result.success = self._handler.try_to_disconnect(args.clientid)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -269,9 +290,18 @@ class Processor(Iface, TProcessor):
 # HELPER FUNCTIONS AND STRUCTURES
 
 class try_to_connect_args:
+  """
+  Attributes:
+   - clientid
+  """
 
   thrift_spec = (
+    None, # 0
+    (1, TType.I32, 'clientid', None, None, ), # 1
   )
+
+  def __init__(self, clientid=None,):
+    self.clientid = clientid
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -282,6 +312,11 @@ class try_to_connect_args:
       (fname, ftype, fid) = iprot.readFieldBegin()
       if ftype == TType.STOP:
         break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.clientid = iprot.readI32()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -292,6 +327,10 @@ class try_to_connect_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('try_to_connect_args')
+    if self.clientid is not None:
+      oprot.writeFieldBegin('clientid', TType.I32, 1)
+      oprot.writeI32(self.clientid)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -301,6 +340,7 @@ class try_to_connect_args:
 
   def __hash__(self):
     value = 17
+    value = (value * 31) ^ hash(self.clientid)
     return value
 
   def __repr__(self):
@@ -523,16 +563,19 @@ class init_image_size_result:
 class bg_blur_args:
   """
   Attributes:
-   - msg
+   - image
+   - clientid
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRUCT, 'msg', (MSG, MSG.thrift_spec), None, ), # 1
+    (1, TType.STRING, 'image', None, None, ), # 1
+    (2, TType.I32, 'clientid', None, None, ), # 2
   )
 
-  def __init__(self, msg=None,):
-    self.msg = msg
+  def __init__(self, image=None, clientid=None,):
+    self.image = image
+    self.clientid = clientid
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -544,9 +587,13 @@ class bg_blur_args:
       if ftype == TType.STOP:
         break
       if fid == 1:
-        if ftype == TType.STRUCT:
-          self.msg = MSG()
-          self.msg.read(iprot)
+        if ftype == TType.STRING:
+          self.image = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.clientid = iprot.readI32()
         else:
           iprot.skip(ftype)
       else:
@@ -559,9 +606,13 @@ class bg_blur_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('bg_blur_args')
-    if self.msg is not None:
-      oprot.writeFieldBegin('msg', TType.STRUCT, 1)
-      self.msg.write(oprot)
+    if self.image is not None:
+      oprot.writeFieldBegin('image', TType.STRING, 1)
+      oprot.writeString(self.image)
+      oprot.writeFieldEnd()
+    if self.clientid is not None:
+      oprot.writeFieldBegin('clientid', TType.I32, 2)
+      oprot.writeI32(self.clientid)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -572,7 +623,8 @@ class bg_blur_args:
 
   def __hash__(self):
     value = 17
-    value = (value * 31) ^ hash(self.msg)
+    value = (value * 31) ^ hash(self.image)
+    value = (value * 31) ^ hash(self.clientid)
     return value
 
   def __repr__(self):
@@ -593,7 +645,7 @@ class bg_blur_result:
   """
 
   thrift_spec = (
-    (0, TType.STRUCT, 'success', (MSG, MSG.thrift_spec), None, ), # 0
+    (0, TType.STRING, 'success', None, None, ), # 0
   )
 
   def __init__(self, success=None,):
@@ -609,9 +661,8 @@ class bg_blur_result:
       if ftype == TType.STOP:
         break
       if fid == 0:
-        if ftype == TType.STRUCT:
-          self.success = MSG()
-          self.success.read(iprot)
+        if ftype == TType.STRING:
+          self.success = iprot.readString()
         else:
           iprot.skip(ftype)
       else:
@@ -625,8 +676,8 @@ class bg_blur_result:
       return
     oprot.writeStructBegin('bg_blur_result')
     if self.success is not None:
-      oprot.writeFieldBegin('success', TType.STRUCT, 0)
-      self.success.write(oprot)
+      oprot.writeFieldBegin('success', TType.STRING, 0)
+      oprot.writeString(self.success)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -652,9 +703,18 @@ class bg_blur_result:
     return not (self == other)
 
 class try_to_disconnect_args:
+  """
+  Attributes:
+   - clientid
+  """
 
   thrift_spec = (
+    None, # 0
+    (1, TType.I32, 'clientid', None, None, ), # 1
   )
+
+  def __init__(self, clientid=None,):
+    self.clientid = clientid
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -665,6 +725,11 @@ class try_to_disconnect_args:
       (fname, ftype, fid) = iprot.readFieldBegin()
       if ftype == TType.STOP:
         break
+      if fid == 1:
+        if ftype == TType.I32:
+          self.clientid = iprot.readI32()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -675,6 +740,10 @@ class try_to_disconnect_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('try_to_disconnect_args')
+    if self.clientid is not None:
+      oprot.writeFieldBegin('clientid', TType.I32, 1)
+      oprot.writeI32(self.clientid)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -684,6 +753,7 @@ class try_to_disconnect_args:
 
   def __hash__(self):
     value = 17
+    value = (value * 31) ^ hash(self.clientid)
     return value
 
   def __repr__(self):
