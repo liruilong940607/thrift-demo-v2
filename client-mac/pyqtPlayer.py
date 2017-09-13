@@ -24,6 +24,7 @@ import cv2
 host = '166.111.71.14'
 port = 9095
 
+timeque = queue.Queue()
 sendque = queue.Queue()
 mutex = threading.Lock()
 recv_count = 0
@@ -109,6 +110,8 @@ class ThreadRecv (threading.Thread):
         img = img.scaled(self.show_frame.width(), self.show_frame.height(), Qt.KeepAspectRatio)#
         pix = QPixmap.fromImage(img)
         self.show_frame.setPixmap(pix)
+        start = timeque.get()
+        print ('[Time Delay]', (time.time()-start)*1000, 'ms')
 
     def sigmoid(self, mask): # [0,1] float ,3 channel
         temp = (mask-0.5)*2*5
@@ -173,6 +176,7 @@ class VideoCapture(QWidget):
         img = img.scaled(self.video_frame.width(), self.video_frame.height(), Qt.KeepAspectRatio)
         pix = QPixmap.fromImage(img)
         self.video_frame.setPixmap(pix)
+        timeque.put(time.time())
         if NotSending==False:
             #print 'client - send', send_count
             sendque.put(frame)
