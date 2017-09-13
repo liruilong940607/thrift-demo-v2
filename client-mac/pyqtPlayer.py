@@ -32,6 +32,13 @@ send_count = 0
 NotSending = True
 slider = None
 BgType = 'blur'
+BgIndex = 0
+
+bg_capture = [cv2.VideoCapture('background/1505272736.mp4'), \
+    cv2.VideoCapture('background/1505273808.mp4'), \
+    cv2.VideoCapture('background/2016_10_22_IMG_4576.mp4'), \
+    cv2.VideoCapture('background/IMG_2165.mp4')]
+
 ################
 ## recv thread
 ################
@@ -42,16 +49,16 @@ class ThreadRecv (threading.Thread):
         threading.Thread.__init__(self)
         self.client = client
         self.show_frame = parent.show_frame
-        self.bgimg = cv2.imread('background.jpg') 
-        if cv2.__version__[0]=='3':
-            self.bgimg = cv2.cvtColor(self.bgimg, cv2.COLOR_BGR2RGB) #opencv3  
-        else:
-            self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
+        #self.bgimg = cv2.imread('background.jpg') 
+        #if cv2.__version__[0]=='3':
+        #    self.bgimg = cv2.cvtColor(self.bgimg, cv2.COLOR_BGR2RGB) #opencv3  
+        #else:
+        #    self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)       
 
     def setsize(self, width, height):
         self.width = width
         self.height = height
-        self.bgimg = cv2.resize(self.bgimg, (width, height))
+        #self.bgimg = cv2.resize(self.bgimg, (width, height))
 
     def run(self):
         print ('thread start')
@@ -86,6 +93,19 @@ class ThreadRecv (threading.Thread):
             self.seg_fine = cv2.resize(self.seg_fine, (self.width, self.height))
             self.seg_fine = np.float32(self.seg_fine)
             
+            global BgIndex
+            mutex.acquire()
+            success, self.bgimg = bg_capture[BgIndex].read()
+            if not success:
+                bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1)
+                success, self.bgimg = bg_capture[BgIndex].read()
+            mutex.release()
+            if cv2.__version__[0]=='3':
+                self.bgimg = cv2.cvtColor(self.bgimg, cv2.COLOR_BGR2RGB) #opencv3  
+            else:
+                self.bgimg = cv2.cvtColor(self.bgimg, cv2.cv.CV_BGR2RGB)
+            self.bgimg = cv2.resize(self.bgimg, (self.width, self.height)) 
+
             if BgType=='blur':
                 blurimg = cv2.blur(self.image, (slider.value(),slider.value()))
                 blur = np.uint8(self.image*(self.seg_fine)+blurimg*(1-self.seg_fine))
@@ -163,6 +183,7 @@ class VideoCapture(QWidget):
         global send_count
         timestart = time.time()
         success, frame = self.cap.read()
+        frame = self.light(frame)
         if not success:
             self.release()
             return
@@ -184,9 +205,7 @@ class VideoCapture(QWidget):
             reqmsg = ttypes.MSG()
             reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
             self.client.send_bg_blur(reqmsg)
-            mutex.acquire()
             send_count += 1
-            mutex.release()
 
     def start(self):
         self.timer.start(1000.0/30)
@@ -197,6 +216,18 @@ class VideoCapture(QWidget):
         self.video_frame.clear()
         global send_count
         send_count = 0
+
+    def light(self, image):
+        value = 60
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        hsv_image = np.array(hsv_image, dtype=np.float32)
+        hsv_image[:,:,2] += value
+        hsv_image[hsv_image>255] = 255
+        hsv_image[hsv_image<0] = 0
+        hsv_image = np.array(hsv_image, dtype=np.uint8)
+        image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+        return image
+    
 
 
 class VideoDisplayWidget(QWidget):
@@ -236,8 +267,17 @@ class VideoDisplayWidget(QWidget):
     def createSliderGroup(self):
         groupBox = QGroupBox("Option: Background Replace / Blur")
 
-        replacebutton = QRadioButton("&Replace")
-        replacebutton.clicked.connect(self.changeToReplace)
+        replacebutton1 = QRadioButton("&Replace1")
+        replacebutton1.clicked.connect(lambda: self.changeToReplace(1))
+        replacebutton2 = QRadioButton("&Replace2")
+        replacebutton2.clicked.connect(lambda: self.changeToReplace(2))
+        replacebutton3 = QRadioButton("&Replace3")
+        replacebutton3.clicked.connect(lambda: self.changeToReplace(3))
+        replacebutton4 = QRadioButton("&Replace4")
+        replacebutton4.clicked.connect(lambda: self.changeToReplace(4))
+        replacebutton5 = QRadioButton("&Replace5")
+        replacebutton5.clicked.connect(lambda: self.changeToReplace(5))
+
         blurbutton = QRadioButton("&Blur")
         blurbutton.clicked.connect(self.changeToBlur)
         blurbutton.setChecked(True)
@@ -252,16 +292,29 @@ class VideoDisplayWidget(QWidget):
         slider.setValue(51)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(replacebutton)
+        replacebox = QWidget()
+        replaceboxlayout = QHBoxLayout()
+        replaceboxlayout.addWidget(replacebutton1)
+        replaceboxlayout.addWidget(replacebutton2)
+        replaceboxlayout.addWidget(replacebutton3)
+        replaceboxlayout.addWidget(replacebutton4)
+        #replaceboxlayout.addWidget(replacebutton5)
+        replacebox.setLayout(replaceboxlayout)
+        vbox.addWidget(replacebox)
         vbox.addWidget(blurbutton)
         vbox.addWidget(slider)
         groupBox.setLayout(vbox)
 
         return groupBox
 
-    def changeToReplace(self):
+    def changeToReplace(self, index):
         global BgType 
+        global BgIndex
         BgType = 'replace'
+        mutex.acquire()
+        BgIndex = index - 1
+        bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1)
+        mutex.release()
         print (BgType)
 
     def changeToBlur(self):
