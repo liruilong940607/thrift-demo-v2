@@ -142,6 +142,17 @@ class ThreadRecv (threading.Thread):
 ## pyQt5
 #####################
 
+def resize_nopadding(image, dstshape): # dstshape = [128, 224]
+    height = image.shape[0]
+    width = image.shape[1]
+    ratio = float(width)/height # ratio = (width:height)
+    dst_width = int(min(dstshape[1]  * ratio, dstshape[0] ))
+    dst_height = int(min(dstshape[0]  / ratio, dstshape[1] ))
+    #print ('[padding]: (w,h) =(',width,height,')==>(',dst_width,dst_height,')')
+    image_resize = cv2.resize(image, (dst_width, dst_height))
+    return image_resize
+
+
 class VideoCapture(QWidget):
     def __init__(self, filename, parent, recvthread):
         print ('init')
@@ -201,7 +212,8 @@ class VideoCapture(QWidget):
         if NotSending==False:
             #print 'client - send', send_count
             sendque.put(frame)
-            imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
+            #imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
+            imgsend = resize_nopadding(frame, [224,224])
             reqmsg = ttypes.MSG()
             reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
             self.client.send_bg_blur(reqmsg)
