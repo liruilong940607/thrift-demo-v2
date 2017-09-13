@@ -34,6 +34,9 @@ slider = None
 BgType = 'blur'
 BgIndex = 0
 
+CameraID = 0
+mutex_CameraID = threading.Lock()
+
 bg_capture = [cv2.VideoCapture('background/1505272736.mp4'), \
     cv2.VideoCapture('background/1505273808.mp4'), \
     cv2.VideoCapture('background/2016_10_22_IMG_4576.mp4'), \
@@ -158,8 +161,11 @@ class VideoCapture(QWidget):
         print ('init')
         super(QWidget, self).__init__()
         self.video_frame = parent.video_frame
+        global CameraID
         if filename=='capture':
-            self.cap = cv2.VideoCapture(0)
+            mutex_CameraID.acquire()
+            self.cap = cv2.VideoCapture(CameraID)
+            mutex_CameraID.release()
         else:
             self.cap = cv2.VideoCapture(filename[0])  
         timeinit = time.time()      
@@ -287,8 +293,8 @@ class VideoDisplayWidget(QWidget):
         replacebutton3.clicked.connect(lambda: self.changeToReplace(3))
         replacebutton4 = QRadioButton("&Replace4")
         replacebutton4.clicked.connect(lambda: self.changeToReplace(4))
-        replacebutton5 = QRadioButton("&Replace5")
-        replacebutton5.clicked.connect(lambda: self.changeToReplace(5))
+        turnbutton = QRadioButton("&Turn")
+        turnbutton.clicked.connect(self.turncamera)
 
         blurbutton = QRadioButton("&Blur")
         blurbutton.clicked.connect(self.changeToBlur)
@@ -310,11 +316,11 @@ class VideoDisplayWidget(QWidget):
         replaceboxlayout.addWidget(replacebutton2)
         replaceboxlayout.addWidget(replacebutton3)
         replaceboxlayout.addWidget(replacebutton4)
-        #replaceboxlayout.addWidget(replacebutton5)
+        replaceboxlayout.addWidget(blurbutton)
         replacebox.setLayout(replaceboxlayout)
         vbox.addWidget(replacebox)
-        vbox.addWidget(blurbutton)
         vbox.addWidget(slider)
+        vbox.addWidget(turnbutton)
         groupBox.setLayout(vbox)
 
         return groupBox
@@ -333,6 +339,13 @@ class VideoDisplayWidget(QWidget):
         global BgType 
         BgType = 'blur'
         print (BgType)
+
+    def turncamera(self):
+        global CameraID
+        mutex_CameraID.acquire()
+        CameraID = (CameraID+1) % 2
+        mutex_CameraID.release()
+
 
 class ControlWindow(QMainWindow):
     def __init__(self):
