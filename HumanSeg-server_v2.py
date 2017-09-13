@@ -3,7 +3,6 @@ import sys, cv2
 sys.path.append('./gen-py')
 
 from HumanSeg import HumanSeg
-from HumanSeg import DataTransfer
 from HumanSeg.ttypes import *
 
 from thrift import Thrift
