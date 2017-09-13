@@ -14,7 +14,6 @@ from thrift.server import TServer
 import numpy as np
 import time
 import threading
-import queue
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -24,8 +23,15 @@ import cv2
 host = '166.111.71.14'
 port = 9095
 
-timeque = queue.Queue()
-sendque = queue.Queue()
+if sys.version_info[0] == 2:
+    import Queue
+    timeque = Queue.Queue()
+    sendque = Queue.Queue()
+else:
+    import queue
+    timeque = queue.Queue()
+    sendque = queue,Queue()
+
 mutex = threading.Lock()
 recv_count = 0
 send_count = 0
@@ -331,7 +337,10 @@ class VideoDisplayWidget(QWidget):
         BgType = 'replace'
         mutex.acquire()
         BgIndex = index - 1
-        bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1)
+        if cv2.__version__[0]=='3':
+            bg_capture[BgIndex].set(cv2.CAP_PROP_POS_FRAMES, 1) #opencv3
+        else:
+            bg_capture[BgIndex].set(cv2.cv.CV_CAP_PROP_POS_FRAMES, 1)
         mutex.release()
         print (BgType)
 
