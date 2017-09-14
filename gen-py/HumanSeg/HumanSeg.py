@@ -34,10 +34,10 @@ class Iface:
     """
     pass
 
-  def bg_blur(self, image, clientid):
+  def bg_blur(self, msg, clientid):
     """
     Parameters:
-     - image
+     - msg
      - clientid
     """
     pass
@@ -121,19 +121,19 @@ class Client(Iface):
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "init_image_size failed: unknown result")
 
-  def bg_blur(self, image, clientid):
+  def bg_blur(self, msg, clientid):
     """
     Parameters:
-     - image
+     - msg
      - clientid
     """
-    self.send_bg_blur(image, clientid)
+    self.send_bg_blur(msg, clientid)
     return self.recv_bg_blur()
 
-  def send_bg_blur(self, image, clientid):
+  def send_bg_blur(self, msg, clientid):
     self._oprot.writeMessageBegin('bg_blur', TMessageType.CALL, self._seqid)
     args = bg_blur_args()
-    args.image = image
+    args.msg = msg
     args.clientid = clientid
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
@@ -254,7 +254,7 @@ class Processor(Iface, TProcessor):
     iprot.readMessageEnd()
     result = bg_blur_result()
     try:
-      result.success = self._handler.bg_blur(args.image, args.clientid)
+      result.success = self._handler.bg_blur(args.msg, args.clientid)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -563,18 +563,18 @@ class init_image_size_result:
 class bg_blur_args:
   """
   Attributes:
-   - image
+   - msg
    - clientid
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRING, 'image', None, None, ), # 1
+    (1, TType.STRUCT, 'msg', (MSG, MSG.thrift_spec), None, ), # 1
     (2, TType.I32, 'clientid', None, None, ), # 2
   )
 
-  def __init__(self, image=None, clientid=None,):
-    self.image = image
+  def __init__(self, msg=None, clientid=None,):
+    self.msg = msg
     self.clientid = clientid
 
   def read(self, iprot):
@@ -587,8 +587,9 @@ class bg_blur_args:
       if ftype == TType.STOP:
         break
       if fid == 1:
-        if ftype == TType.STRING:
-          self.image = iprot.readString()
+        if ftype == TType.STRUCT:
+          self.msg = MSG()
+          self.msg.read(iprot)
         else:
           iprot.skip(ftype)
       elif fid == 2:
@@ -606,9 +607,9 @@ class bg_blur_args:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('bg_blur_args')
-    if self.image is not None:
-      oprot.writeFieldBegin('image', TType.STRING, 1)
-      oprot.writeString(self.image)
+    if self.msg is not None:
+      oprot.writeFieldBegin('msg', TType.STRUCT, 1)
+      self.msg.write(oprot)
       oprot.writeFieldEnd()
     if self.clientid is not None:
       oprot.writeFieldBegin('clientid', TType.I32, 2)
@@ -623,7 +624,7 @@ class bg_blur_args:
 
   def __hash__(self):
     value = 17
-    value = (value * 31) ^ hash(self.image)
+    value = (value * 31) ^ hash(self.msg)
     value = (value * 31) ^ hash(self.clientid)
     return value
 
@@ -645,7 +646,7 @@ class bg_blur_result:
   """
 
   thrift_spec = (
-    (0, TType.STRING, 'success', None, None, ), # 0
+    (0, TType.STRUCT, 'success', (MSG, MSG.thrift_spec), None, ), # 0
   )
 
   def __init__(self, success=None,):
@@ -661,8 +662,9 @@ class bg_blur_result:
       if ftype == TType.STOP:
         break
       if fid == 0:
-        if ftype == TType.STRING:
-          self.success = iprot.readString()
+        if ftype == TType.STRUCT:
+          self.success = MSG()
+          self.success.read(iprot)
         else:
           iprot.skip(ftype)
       else:
@@ -676,8 +678,8 @@ class bg_blur_result:
       return
     oprot.writeStructBegin('bg_blur_result')
     if self.success is not None:
-      oprot.writeFieldBegin('success', TType.STRING, 0)
-      oprot.writeString(self.success)
+      oprot.writeFieldBegin('success', TType.STRUCT, 0)
+      self.success.write(oprot)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()

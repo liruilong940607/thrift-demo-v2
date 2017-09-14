@@ -38,17 +38,20 @@ class HumanSegHandler:
         
         return 'init image size done!'
     
-    def bg_blur(self, image, clientid):
+    def bg_blur(self, msg, clientid):
         print 'server--blur'
         timestamp = datetime.now()
+        image = msg.image
         frame = codec.decode(image, codec_map[clientid])
-        print 'shape1', frame.shape
+        frame = frame[:,:,::-1]
         seg_fine = fcn_seg_infer.pred_overall(frame)*255.0
         seg_fine = seg_fine[..., np.newaxis]
         seg_fine = np.concatenate((seg_fine, seg_fine, seg_fine), axis=2)
-        print 'shape2', seg_fine.shape
         fcn_seg_infer.printTime('[Time] decode+encode+pred', timestamp)
-        return codec.encode(seg_fine, codec_map[clientid])
+        reqmsg = MSG()
+        reqmsg.image = codec.encode(seg_fine, codec_map[clientid])
+        reqmsg.imageid = msg.imageid
+        return reqmsg
     
 handler = HumanSegHandler()
 processor = HumanSeg.Processor(handler)
