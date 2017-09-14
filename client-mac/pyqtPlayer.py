@@ -88,19 +88,27 @@ class ThreadRecv (threading.Thread):
             msg = self.client.recv_bg_blur()
             start = time.time()
             recv_count += 1
+            self.seg_fine = codec.decode(msg.image, codecid) / 255.0 #codec
+            recv_imageid = msg.imageid
+            if recv_imageid==0 or recv_imageid==1 or recv_imageid==2 or recv_imageid==3:
+                continue
+            print ('recv_imageid', recv_imageid)
             # nparr = np.fromstring(msg.image, np.uint8)
             # if cv2.__version__[0]=='3':
             #     self.image = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #opencv3  
             # else:
             #     self.image = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
             # self.image = cv2.resize(self.image, (self.width, self.height))
-            self.image = sendque.get()
+            senditem = sendque.get()
+            print ('send_imageid', senditem[0])
+            self.image = senditem[1]
+            
             # nparr = np.fromstring(msg.blur, np.uint8)
             # if cv2.__version__[0]=='3':
             #     self.seg_fine = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED) / 255.0 #opencv3  
             # else:
             #     self.seg_fine = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_UNCHANGED) / 255.0
-            self.seg_fine = codec.decode(msg, codecid) / 255.0 #codec
+            
             #self.seg_fine = self.sigmoid(self.seg_fine)
             #self.seg_fine = self.seg_fine[..., np.newaxis]
             #self.seg_fine = np.concatenate((self.seg_fine,self.seg_fine,self.seg_fine), axis=2)
@@ -228,13 +236,13 @@ class VideoCapture(QWidget):
         timeque.put(time.time())
         if NotSending==False:
             #print 'client - send', send_count
-            sendque.put(frame)
+            sendque.put([send_count, frame])
             #imgsend = cv2.resize(frame,(0, 0), fx = 0.3, fy = 0.3) # DO NOT change this size
             imgsend = resize_nopadding(frame, [448,448])
-            #reqmsg = ttypes.MSG()
-            #reqmsg.image = cv2.imencode('.jpg', imgsend)[1].tostring()
-            print imgsend.shape
-            self.client.send_bg_blur(codec.encode(imgsend, codecid), clientID) #codec
+            reqmsg = ttypes.MSG()
+            reqmsg.image = codec.encode(imgsend, codecid)
+            reqmsg.imageid = send_count
+            self.client.send_bg_blur(reqmsg, clientID) #codec
             send_count += 1
 
     def start(self):
@@ -248,7 +256,7 @@ class VideoCapture(QWidget):
         send_count = 0
 
     def light(self, image):
-        value = 60
+        value = 50
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         hsv_image = np.array(hsv_image, dtype=np.float32)
         hsv_image[:,:,2] += value

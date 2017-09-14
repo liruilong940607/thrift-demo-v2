@@ -43,7 +43,6 @@ class HumanSegHandler:
         timestamp = datetime.now()
         image = msg.image
         frame = codec.decode(image, codec_map[clientid])
-        frame = frame[:,:,::-1]
         seg_fine = fcn_seg_infer.pred_overall(frame)*255.0
         seg_fine = seg_fine[..., np.newaxis]
         seg_fine = np.concatenate((seg_fine, seg_fine, seg_fine), axis=2)
@@ -51,8 +50,8 @@ class HumanSegHandler:
         reqmsg = MSG()
         reqmsg.image = codec.encode(seg_fine, codec_map[clientid])
         reqmsg.imageid = msg.imageid
-        show = np.hstack((frame, seg_fine))
-        cv2.imwrite('temp/%d.jpg'%int(msg.imageid), show)
+        #show = np.hstack((frame, seg_fine))
+        #cv2.imwrite('temp/%d.jpg'%int(msg.imageid), show)
         return reqmsg
     
 handler = HumanSegHandler()
