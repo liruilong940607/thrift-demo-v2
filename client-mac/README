@@ -43,3 +43,31 @@ eg
 
 pyinstaller.py -F -p C:\python27; ..\demo.py  #注意当前目录是我在下一级目录里
 
+
+## codec 在mac上的配置
+
+## libav
+
+版本（release/9） ：https://github.com/libav/libav/tree/release/9
+
+./configure --enable-gpl --enable-shared --disable-static --disable-doc --disable-avconv --disable-avplay --disable-avprobe --disable-avserver --enable-libx264 --disable-debug --prefix=/Users/dalong/3rd-Party/libav/install_prefix
+
+Ref：http://blog.csdn.net/wangpingfang/article/details/8133622
+
+## boost python2
+
+brew install boost-python
+
+## boost python3
+
+[Error] can't find 'Python.h' ==>
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6/include/python3.6m/"
+
+./bootstrap.sh --with-python=/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6/bin/python --with-python-root=/usr/local/Cellar/python3/3.6.2/Frameworks/Python.framework/Versions/3.6 --prefix=/Users/dalong/3rd-Party/boost/boost_1_62_0/install_prefix
+
+## 'import codec' error
+
+export DYLD_LIBRARY_PATH=/Users/dalong/3rd-Party/opencv/opencv2-py2.7/lib:/Users/dalong/3rd-Party/boost/boost_1_62_0/install_prefix/lib
+
+注： 最终用的python2来编译codec，由于python3的str unicode编码不识别问题暂未解决。
+
