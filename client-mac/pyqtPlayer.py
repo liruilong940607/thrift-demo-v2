@@ -30,7 +30,7 @@ if sys.version_info[0] == 2:
 else:
     import queue
     timeque = queue.Queue()
-    sendque = queue,Queue()
+    sendque = queue.Queue()
 
 mutex = threading.Lock()
 recv_count = 0
