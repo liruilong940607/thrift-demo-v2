@@ -51,6 +51,8 @@ class HumanSegHandler:
         reqmsg = MSG()
         reqmsg.image = codec.encode(seg_fine, codec_map[clientid])
         reqmsg.imageid = msg.imageid
+        show = np.hstack((frame, seg_fine))
+        cv2.imwrite('temp/%d.jpg'%int(msg.imageid), show)
         return reqmsg
     
 handler = HumanSegHandler()
